@@ -1,3 +1,5 @@
+import kotlin.math.max
+
 const val taxPercent4VisaMir = 0.0075
 const val taxMin4VisaMir = 35
 const val taxPercent4MastercardMaestro = 0.006
@@ -23,19 +25,20 @@ const val maxTotalMonthTransferLimit4MastercardMaestro2NotPayTax = 75_000
 fun main() {
     val userCard = "Mastercard"
     val transaction = 10_000
-    calculateTax(userCard, transaction)
+
+    println(calculateTax(userCard, transaction))
 }
 
-fun calculateTax(userCard: String, transaction: Int) {
+fun calculateTax(userCard: String, transaction: Int): String {
     when (userCard) {
         "Mastercard", "Maestro" ->
             when {
                 transaction + determineMonthLimitUsed(userCard) > monthLimitExceptVKPay -> {
-                    println("Перевод невозможен, т.к. превысит месячный лимит ($monthLimitExceptVKPay руб.) на " +
+                    return ("Перевод невозможен, т.к. превысит месячный лимит ($monthLimitExceptVKPay руб.) на " +
                             "${transaction + determineMonthLimitUsed(userCard) - monthLimitExceptVKPay} руб.")
                     }
                 transaction + determineDayLimitUsed(userCard) > dayLimitExceptVKPay -> {
-                    println("Перевод невозможен, т.к. превысит дневной лимит ($dayLimitExceptVKPay руб.) на " +
+                    return ("Перевод невозможен, т.к. превысит дневной лимит ($dayLimitExceptVKPay руб.) на " +
                             "${transaction + determineDayLimitUsed(userCard) - dayLimitExceptVKPay} руб.")
                     }
                 transaction < minTransfer4MastercardMaestro2NotPayTax ||
@@ -44,7 +47,7 @@ fun calculateTax(userCard: String, transaction: Int) {
                             val tax: Int = (transaction * taxPercent4MastercardMaestro +
                                     taxFixed4MastercardMaestro).toInt()
                             addMonthAndDayLimitUsed(userCard, transaction)
-                            println("Комиссия за перевод составила $tax руб.")
+                            return ("Комиссия за перевод составила $tax руб.")
                         }
                 transaction + determineMonthLimitUsed(userCard) >
                         maxTotalMonthTransferLimit4MastercardMaestro2NotPayTax -> {
@@ -52,42 +55,41 @@ fun calculateTax(userCard: String, transaction: Int) {
                                     maxTotalMonthTransferLimit4MastercardMaestro2NotPayTax) *
                                     taxPercent4MastercardMaestro + taxFixed4MastercardMaestro).toInt()
                             addMonthAndDayLimitUsed(userCard, transaction)
-                            println("Комиссия за перевод составила $tax руб.")
+                            return ("Комиссия за перевод составила $tax руб.")
                         }
-                else -> println("Комиссия не взимается")
+                else -> return ("Комиссия не взимается")
             }
         "Visa", "Mir" ->
             when {
                 transaction + determineMonthLimitUsed(userCard) > monthLimitExceptVKPay -> {
-                    println("Перевод невозможен, т.к. превысит месячный лимит ($monthLimitExceptVKPay руб.) на " +
+                    return ("Перевод невозможен, т.к. превысит месячный лимит ($monthLimitExceptVKPay руб.) на " +
                             "${transaction + determineMonthLimitUsed(userCard) - monthLimitExceptVKPay} руб.")
                 }
                 transaction + determineDayLimitUsed(userCard) > dayLimitExceptVKPay -> {
-                    println("Перевод невозможен, т.к. превысит дневной лимит ($dayLimitExceptVKPay руб.) на " +
+                    return ("Перевод невозможен, т.к. превысит дневной лимит ($dayLimitExceptVKPay руб.) на " +
                             "${transaction + determineDayLimitUsed(userCard) - dayLimitExceptVKPay} руб.")
                 }
                 else -> {
-                    val tax: Int =
-                        if ((transaction * taxPercent4VisaMir).toInt() <= taxMin4VisaMir) {taxMin4VisaMir}
-                        else {(transaction * taxPercent4VisaMir).toInt()}
+                    val tax: Int = max((transaction * taxPercent4VisaMir).toInt(), taxMin4VisaMir)
                     addMonthAndDayLimitUsed(userCard, transaction)
-                    println("Комиссия за перевод составила $tax руб.")
+                    return ("Комиссия за перевод составила $tax руб.")
                 }
             }
         "VKPay" ->
             when {
                 transaction > onetimeLimit4VKPay -> {
-                    println("Перевод невозможен, т.к. превышает единоразовый лимит в $onetimeLimit4VKPay руб.")
+                    return ("Перевод невозможен, т.к. превышает единоразовый лимит в $onetimeLimit4VKPay руб.")
                 }
-                transaction + monthLimitUsed4VKPay > monthLimit4VKPay -> {
-                    println("Перевод невозможен, т.к. превысит месячный лимит ($monthLimit4VKPay руб.) на " +
+                transaction + determineMonthLimitUsed(userCard) > monthLimit4VKPay -> {
+                    return ("Перевод невозможен, т.к. превысит месячный лимит ($monthLimit4VKPay руб.) на " +
                             "${transaction + monthLimitUsed4VKPay - monthLimit4VKPay} руб.")
                 }
                 else -> {
                     addMonthAndDayLimitUsed(userCard, transaction)
-                    println("Комиссия не взимается")
+                    return ("Комиссия не взимается")
                 }
             }
+        else -> return ("Недопустимая карта")
     }
 }
 
